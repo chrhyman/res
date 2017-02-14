@@ -1,0 +1,1 @@
+VANRES = 'vanilla resistance'
