@@ -1,5 +1,6 @@
 import pygame
 from pygame.locals import *
+from constants import *
 
-
-use font consolas.ttf
+WINDOWWIDTH = 1024
+WINDOWHEIGHT = 768
