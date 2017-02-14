@@ -1,3 +1,7 @@
+VERSION = '0.0.1'
+# A Python (pygame) implementation of The Resistance
+# github.com/chrhyman/res
+
 import pygame, sys
 from pygame.locals import *
 from constants import *
@@ -31,9 +35,7 @@ def main():
         # lobby loop that sends user to a game loop function
         DISPLAYSURF.fill(BGCOLOR)
         checkForQuit()
-
-        pygame.display.update()
-        FPSCLOCK.tick(FPS)
+        updateDisplay()
 
 def showStartScreen():
     titleSurf = BIGFONT.render('The Resistance', True, RESBLUE)
@@ -50,18 +52,17 @@ def showStartScreen():
             return
         DISPLAYSURF.fill(BGCOLOR)
         DISPLAYSURF.blit(titleSurf, titleRect)
-        drawText(DISPLAYSURF, DESC, TEXTCOLOR, descRect, MAINFONT)
-        if pygame.time.get_ticks() % 1500 < 750:
+        drawText(DISPLAYSURF, DESC, TEXTCOLOR, descRect, MAINFONT, 1)
+        if pygame.time.get_ticks() % 1500 < 900:
             DISPLAYSURF.blit(footerSurf, footerRect)
-        pygame.display.update()
-        FPSCLOCK.tick(FPS)
+        updateDisplay()
 
 # text wrap for boxes of text
 # returns non-blitted text
-def drawText(surface, text, color, rect, font, aa=True):
+def drawText(surface, text, color, rect, font, spacing=-2, aa=True):
     rect = Rect(rect)
     y = rect.top
-    lineSpacing = -2
+    lineSpacing = spacing
     fontHeight = font.size("Tg")[1]
     while text:
         i = 1
@@ -90,6 +91,15 @@ def checkForKeyPress():
             continue # removes keydowns from queue
         return event.key
     return None
+
+def updateDisplay():
+    verFont = pygame.font.Font('resources/consolas.ttf', 11)
+    verSurf = verFont.render('(c) Chris Hyman v.' + VERSION, True, DARKGRAY)
+    verRect = verSurf.get_rect()
+    verRect.bottomright = (WINDOWWIDTH-2, WINDOWHEIGHT-2)
+    DISPLAYSURF.blit(verSurf, verRect)
+    pygame.display.update()
+    FPSCLOCK.tick(FPS)
 
 def checkForQuit():
     for event in pygame.event.get(QUIT):

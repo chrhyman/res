@@ -1,2 +1,7 @@
-*.pyc
+*.py[cod]
+*$py.class
+__pycache__/
 .DS_Store
+.Python
+*.manifest
+*.spec

@@ -1,3 +1,5 @@
+# github.com/chrhyman/res
+
 import math
 from constants import *
 
