@@ -1,8 +1,9 @@
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 # A Python (pygame) implementation of The Resistance
 # github.com/chrhyman/res
 
-import pygame, sys
+import sys, os
+import pygame
 from pygame.locals import *
 from constants import *
 
@@ -10,43 +11,74 @@ FPS = 30
 WINDOWWIDTH = 1024
 WINDOWHEIGHT = 768
 MARGIN = 25
+PADDING = 10
+BODYWIDTH = WINDOWWIDTH - MARGIN*2
+
+CONSOLASPATH = os.path.join('resources', 'font', 'consolas.ttf')
 
 # colors            R    G    B
 WHITE           = (255, 255, 255)
 BLACK           = (  0,   0,   0)
-RESBLUE         = ( 80, 180, 210)
+RESBLUE         = ( 60, 160, 220)
 SPYRED          = (195,  60,  60)
 DARKGRAY        = ( 65,  65,  65)
+LIGHTGRAY       = (190, 190, 190)
 
 BGCOLOR = WHITE
 TEXTCOLOR = BLACK
+VERCOLOR = DARKGRAY
 
 def main():
     global FPSCLOCK, DISPLAYSURF, MAINFONT, BIGFONT
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
+    ICON = pygame.image.load(os.path.join('resources', 'img', 'icon.png'))
+    pygame.display.set_icon(ICON)   # sets taskbar logo/icon
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    MAINFONT = pygame.font.Font('resources/consolas.ttf', 18)
-    BIGFONT = pygame.font.Font('resources/consolas.ttf', 100)
-    pygame.display.set_caption('The Resistance')
+    MAINFONT = pygame.font.Font(CONSOLASPATH, 18)
+    BIGFONT = pygame.font.Font(CONSOLASPATH, 80)
+    pygame.display.set_caption('The Resistance - v. ' + VERSION)
 
     showStartScreen()
     while True:
-        # lobby loop that sends user to a game loop function
+        lobbyLoop()
+
+def lobbyLoop():
+    while True:
         DISPLAYSURF.fill(BGCOLOR)
+        titleSurf, titleRect = titleText('Lobby', RESBLUE, MARGIN, MARGIN)
+        DISPLAYSURF.blit(titleSurf, titleRect)
+        bodyRect = (MARGIN, titleRect.bottom + PADDING, BODYWIDTH, WINDOWHEIGHT - MARGIN - PADDING - titleRect.bottom)
+        pygame.draw.rect(DISPLAYSURF, LIGHTGRAY, bodyRect, 2)
+
+        makeButton('newroom', top=MARGIN, right=WINDOWWIDTH - MARGIN)
+
         checkForQuit()
+        pygame.event.clear()    # possibly solves 'freezing' issue in 0.0.1 where QUIT/ESC fail to terminate the program
         updateDisplay()
 
+def makeButton(name, top=None, left=None, bottom=None, right=None):
+    button = name + '.png'
+    pressed = name + '_pressed.png'
+    imgSurf = pygame.image.load(os.path.join('resources', 'button', button))
+    imgRect = imgSurf.get_rect()
+    if top: imgRect.top = top
+    if left: imgRect.left = left
+    if bottom: imgRect.bottom = bottom
+    if right: imgRect.right = right
+    if pygame.mouse.get_pressed()[0] and imgRect.collidepoint(pygame.mouse.get_pos()):
+        imgSurf = pygame.image.load(os.path.join('resources', 'button', pressed))
+
+    DISPLAYSURF.blit(imgSurf, imgRect)
+
 def showStartScreen():
-    titleSurf = BIGFONT.render('The Resistance', True, RESBLUE)
-    titleRect = titleSurf.get_rect()
-    titleRect.midtop = (int(WINDOWWIDTH / 2), MARGIN)
+    titleSurf, titleRect = titleText('The Resistance', RESBLUE, MARGIN, MARGIN)
 
     footerSurf = MAINFONT.render('Press any key to continue.', True, SPYRED)
     footerRect = footerSurf.get_rect()
     footerRect.midbottom = (int(WINDOWWIDTH / 2), WINDOWHEIGHT - MARGIN)
 
-    descRect = (MARGIN, titleRect.bottom + MARGIN, WINDOWWIDTH - MARGIN*2, WINDOWHEIGHT - titleRect.height - footerRect.height - MARGIN*4)
+    descRect = (MARGIN, titleRect.bottom + PADDING, BODYWIDTH, WINDOWHEIGHT - titleRect.height - footerRect.height - MARGIN*2 - PADDING*2)
     while True:
         if checkForKeyPress() != None:
             return
@@ -56,6 +88,12 @@ def showStartScreen():
         if pygame.time.get_ticks() % 1500 < 900:
             DISPLAYSURF.blit(footerSurf, footerRect)
         updateDisplay()
+
+def titleText(text, color, left, top):
+    titleSurf = BIGFONT.render(text, True, color)
+    titleRect = titleSurf.get_rect()
+    titleRect.topleft = (left, top)
+    return titleSurf, titleRect
 
 # text wrap for boxes of text
 # returns non-blitted text
@@ -83,7 +121,6 @@ def drawText(surface, text, color, rect, font, spacing=-2, aa=True):
         text = text[i:]
     return text
 
-
 def checkForKeyPress():
     checkForQuit()
     for event in pygame.event.get([KEYDOWN, KEYUP]):
@@ -93,8 +130,8 @@ def checkForKeyPress():
     return None
 
 def updateDisplay():
-    verFont = pygame.font.Font('resources/consolas.ttf', 11)
-    verSurf = verFont.render('(c) Chris Hyman v.' + VERSION, True, DARKGRAY)
+    verFont = pygame.font.Font(CONSOLASPATH, 11)
+    verSurf = verFont.render('(c) Chris Hyman v.' + VERSION, True, VERCOLOR)
     verRect = verSurf.get_rect()
     verRect.bottomright = (WINDOWWIDTH-2, WINDOWHEIGHT-2)
     DISPLAYSURF.blit(verSurf, verRect)
@@ -110,6 +147,7 @@ def checkForQuit():
         pygame.event.post(event) # put other KEYUPs back if not ESC
 
 def terminate():
+    # send POST request that removes user from games/lobbies
     pygame.quit()
     sys.exit()
 
