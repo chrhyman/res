@@ -1,9 +1,9 @@
-VERSION = '0.0.2'
+VERSION = '0.0.3'
 # A Python (pygame) implementation of The Resistance
 # github.com/chrhyman/res
 
 import sys, os
-import pygame
+import pygame, requests
 from pygame.locals import *
 from constants import *
 
@@ -40,6 +40,7 @@ def main():
     pygame.display.set_caption('The Resistance - v. ' + VERSION)
 
     showStartScreen()
+    checkVer()
     while True:
         lobbyLoop()
 
@@ -71,6 +72,45 @@ def makeButton(name, top=None, left=None, bottom=None, right=None):
 
     DISPLAYSURF.blit(imgSurf, imgRect)
 
+# gets version from server (json data, which requests decodes)
+# interrupts code if version mismatch
+def checkVer():
+    get_ver = requests.get('http://wugs.pythonanywhere.com/games/res/ver')
+    ver_data = get_ver.json()
+    server_ver = ver_data['version']
+    beta_ver = ver_data['beta']
+    old_dates = ver_data['old dates']   # old_dates['0.0.1'] -> '2017-02-14'
+    if VERSION != server_ver:    # old or beta version
+        beta, old = None, None
+        if VERSION == beta_ver:
+            beta = True
+        elif VERSION in old_dates:
+            old = True
+        else:   # if it isn't beta, current, or old, it doesn't exist
+            assert False, 'Version Error: Version does not exist. Visit github.com/chrhyman/res/issues and submit a bug report.'
+        verSurf = pygame.Surface((int(WINDOWWIDTH * 0.5), int(WINDOWHEIGHT * 0.5)))
+        verRect = verSurf.get_rect()
+        verSurf.fill(BGCOLOR)
+        pygame.draw.rect(verSurf, LIGHTGRAY, verRect, 4)
+        ts, tr = titleText('Bad Version', SPYRED, PADDING, PADDING)
+        verSurf.blit(ts, tr)
+        textRect = (PADDING, tr.bottom + PADDING, verRect.width - PADDING*2, verRect.height - tr.bottom - PADDING)
+        verText = 'You are running version ' + VERSION + '. The current version is ' + server_ver + '. '
+        if beta:
+            verText = verText + 'This beta version may not interact correctly with the main server due to version differences. It is recommended that beta versions be used on test servers, not on the main server. Please use ESC to quit this application and make the necessary changes. If you believe you are getting this message in error, please contact Chris (chrhyman@gmail.com).'
+        if old:
+            verText = verText + 'This old version will not interact with the server correctly. Please use ESC to quit this application and visit github.com/chrhyman/res to download v. ' + server_ver + '. If you are getting this message in error (for instance, you do have the current version), please create a bug report under "Issues" at the Github linked above.'
+        drawText(verSurf, verText, TEXTCOLOR, textRect, MAINFONT, spacing=2)
+        verRect.center = (int(WINDOWWIDTH * 0.5), int(WINDOWHEIGHT * 0.5))
+        DISPLAYSURF.blit(verSurf, verRect)
+        updateDisplay()
+        while True:
+            checkForQuit()
+            pygame.event.clear()
+    else:   # up to date
+        return
+    assert False, ('Error. Version verification failure.')
+
 def showStartScreen():
     titleSurf, titleRect = titleText('The Resistance', RESBLUE, MARGIN, MARGIN)
 
@@ -96,7 +136,7 @@ def titleText(text, color, left, top):
     return titleSurf, titleRect
 
 # text wrap for boxes of text
-# returns non-blitted text
+# returns non-blitted text (if any didn't fit)
 def drawText(surface, text, color, rect, font, spacing=-2, aa=True):
     rect = Rect(rect)
     y = rect.top
@@ -134,6 +174,7 @@ def updateDisplay():
     verSurf = verFont.render('(c) Chris Hyman v.' + VERSION, True, VERCOLOR)
     verRect = verSurf.get_rect()
     verRect.bottomright = (WINDOWWIDTH-2, WINDOWHEIGHT-2)
+    pygame.draw.rect(DISPLAYSURF, WHITE, verRect)
     DISPLAYSURF.blit(verSurf, verRect)
     pygame.display.update()
     FPSCLOCK.tick(FPS)
