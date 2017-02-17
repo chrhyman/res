@@ -1,4 +1,4 @@
-VERSION = '0.0.4b'
+VERSION = '0.0.4c'
 # A Python (pygame) implementation of The Resistance
 # github.com/chrhyman/res
 
@@ -55,11 +55,37 @@ def displayLobbies(enclosure):
     box_width = int((enclosure.width - PADDING*(BOXCOLS+1))/BOXCOLS)
     box_height = int((enclosure.height - PADDING*(BOXROWS+1))/BOXROWS)
     # nest for loops to iterate over area of boxes
+    boxlist = [] # boxes found by boxlist[row][col]
     for row in range(BOXROWS):
+        boxlist.append([])
         for col in range(BOXCOLS):
             x = enclosure.left + PADDING + col*(box_width+PADDING)
             y = enclosure.top + PADDING + row*(box_height+PADDING)
-            pygame.draw.rect(DISPLAYSURF, LIGHTGRAY, (x, y, box_width, box_height)) # placeholder rectangles; will become boxes representing each open library, fetched from BASEURL/lobby/data
+            boxlist[row].append((x, y, box_width, box_height))
+    l = requests.get(BASEURL + '/lobby/data')
+    lobbydata = l.json() # lobbydata["roomnum"] returns dict defining room
+# keys: description (str), leader (str), players (list), spectators (list), room (int), private (bool), password (str if private=True, else None)
+    if len(lobbydata) > BOXCOLS * BOXROWS: # only show first ROWS*COLS active lobbies
+        i = 0
+        for key, value in lobbydata.items():
+            temp = []
+            r = lobbydata[key].room
+            while len(temp) < BOXCOLS * BOXROWS:
+                if r == i:
+                    temp.append(value)
+                    i += 1
+        lobbydata = temp    # overwrite data so only first ROWS*COLS are shown, as a list of DICTs
+    for item in range(len(lobbydata)):
+        lobbydata[item]['lobbySurf'] = makeLobbySurf(lobbydata[item], box_width, box_height)
+
+def makeLobbySurf(dict, width, height):
+    lobSurf = Surface(width, height)
+    tFont = getFont(40)
+    ts, tr = draw.lineText('Room ' + str(dict['room']), RESBLUE, tFont, PADDING, PADDING)
+    lobSurf.blit(ts, tr)
+    pygame.draw.line(lobSurf, SPYRED, (0, tr.bottom), (width, tr.bottom), 2)
+
+    return lobSurf
 
 # gets version from server (json data, which requests decodes)
 # interrupts code if version mismatch
