@@ -1,5 +1,24 @@
 # github.com/chrhyman/res
 
+FPS = 30
+WINDOWWIDTH = 1024
+WINDOWHEIGHT = 768
+MARGIN = 25
+PADDING = 10
+BODYWIDTH = WINDOWWIDTH - MARGIN*2
+
+# colors            R    G    B
+WHITE           = (255, 255, 255)
+BLACK           = (  0,   0,   0)
+RESBLUE         = ( 60, 160, 220)
+SPYRED          = (195,  60,  60)
+DARKGRAY        = ( 65,  65,  65)
+LIGHTGRAY       = (190, 190, 190)
+
+BGCOLOR = WHITE
+TEXTCOLOR = BLACK
+VERCOLOR = DARKGRAY
+
 VANRES = 'vanilla resistance'
 MERLIN = 'Merlin'
 PERCIVAL = 'Percival'

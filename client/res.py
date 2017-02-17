@@ -1,4 +1,4 @@
-VERSION = '0.0.4'
+VERSION = '0.0.4b'
 # A Python (pygame) implementation of The Resistance
 # github.com/chrhyman/res
 
@@ -8,13 +8,6 @@ import draw, check
 from pygame.locals import *
 from constants import *
 
-FPS = 30
-WINDOWWIDTH = 1024
-WINDOWHEIGHT = 768
-MARGIN = 25
-PADDING = 10
-BODYWIDTH = WINDOWWIDTH - MARGIN*2
-
 FILE = os.path.abspath(__file__)
 ROOTDIR = os.path.dirname(os.path.dirname(FILE))
 RESOURCES = os.path.join(ROOTDIR, 'resources')
@@ -23,18 +16,6 @@ BASEURL = 'http://wugs.pythonanywhere.com/games/res'
 
 CONSOLASPATH = os.path.join(RESOURCES, 'font', 'consolas.ttf')
 
-# colors            R    G    B
-WHITE           = (255, 255, 255)
-BLACK           = (  0,   0,   0)
-RESBLUE         = ( 60, 160, 220)
-SPYRED          = (195,  60,  60)
-DARKGRAY        = ( 65,  65,  65)
-LIGHTGRAY       = (190, 190, 190)
-
-BGCOLOR = WHITE
-TEXTCOLOR = BLACK
-VERCOLOR = DARKGRAY
-
 def main():
     global FPSCLOCK, DISPLAYSURF, MAINFONT, BIGFONT
     pygame.init()
@@ -42,8 +23,8 @@ def main():
     ICON = pygame.image.load(os.path.join(RESOURCES, 'img', 'icon.png'))
     pygame.display.set_icon(ICON)   # sets taskbar logo/icon
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    MAINFONT = pygame.font.Font(CONSOLASPATH, 18)
-    BIGFONT = pygame.font.Font(CONSOLASPATH, 80)
+    MAINFONT = getFont(18)
+    BIGFONT = getFont(80)
     pygame.display.set_caption('The Resistance - v. ' + VERSION)
 
     showStartScreen()
@@ -137,8 +118,11 @@ def showStartScreen():
             DISPLAYSURF.blit(footerSurf, footerRect)
         updateDisplay()
 
+def getFont(size):
+    return pygame.font.Font(CONSOLASPATH, size)
+
 def updateDisplay():
-    verFont = pygame.font.Font(CONSOLASPATH, 11)
+    verFont = getFont(11)
     verSurf, verRect = draw.lineText('(c) Chris Hyman v.' + VERSION, VERCOLOR, verFont)
     verRect.bottomright = (WINDOWWIDTH-2, WINDOWHEIGHT-2)
     pygame.draw.rect(DISPLAYSURF, WHITE, verRect)

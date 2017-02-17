@@ -3,7 +3,6 @@
 import pygame
 from pygame.locals import *
 import res
-from constants import BETATEXT, OLDTEXT
 
 def backdoor(): # bypass version check error (debug & testing only!)
     a, b, c = None, None, None

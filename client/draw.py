@@ -1,6 +1,7 @@
 # github.com/chrhyman/res
 
-import os, pygame
+import os.path
+import pygame
 from res import RESOURCES
 
 def makeButton(name, surface, top=None, left=None, bottom=None, right=None):
