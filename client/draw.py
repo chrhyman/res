@@ -4,7 +4,7 @@ import os.path
 import pygame
 from res import RESOURCES
 
-def makeButton(name, surface, top=None, left=None, bottom=None, right=None):
+def makeButton(name, surface, top=None, left=None, bottom=None, right=None, midbottom=None):
     button = name + '.png'
     pressed = name + '_pressed.png'
     imgSurf = pygame.image.load(os.path.join(RESOURCES, 'button', button))
@@ -13,6 +13,7 @@ def makeButton(name, surface, top=None, left=None, bottom=None, right=None):
     if left: imgRect.left = left
     if bottom: imgRect.bottom = bottom
     if right: imgRect.right = right
+    if midbottom: imgRect.midbottom = midbottom
     if pygame.mouse.get_pressed()[0] and imgRect.collidepoint(pygame.mouse.get_pos()):
         imgSurf = pygame.image.load(os.path.join(RESOURCES, 'button', pressed))
 

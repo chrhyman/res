@@ -1,4 +1,4 @@
-VERSION = '0.0.4b'
+VERSION = '0.0.5'
 # A Python (pygame) implementation of The Resistance
 # github.com/chrhyman/res
 
@@ -15,6 +15,8 @@ RESOURCES = os.path.join(ROOTDIR, 'resources')
 BASEURL = 'http://wugs.pythonanywhere.com/games/res'
 
 CONSOLASPATH = os.path.join(RESOURCES, 'font', 'consolas.ttf')
+
+GETUPDATE = 4000 # frequency of GETting data in loops, in milliseconds
 
 def main():
     global FPSCLOCK, DISPLAYSURF, MAINFONT, BIGFONT
@@ -33,33 +35,93 @@ def main():
         lobbyLoop()
 
 def lobbyLoop():
+    DISPLAYSURF.fill(BGCOLOR)
+    loadSurf, loadRect = draw.lineText('Loading ...', LIGHTGRAY, MAINFONT)
+    loadRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
+    DISPLAYSURF.blit(loadSurf, loadRect)
     while True:
-        DISPLAYSURF.fill(BGCOLOR)
         titleSurf, titleRect = draw.lineText('Lobby', RESBLUE, BIGFONT, MARGIN, MARGIN)
+        bodyRect = Rect(MARGIN, titleRect.bottom + PADDING, BODYWIDTH, WINDOWHEIGHT - MARGIN - PADDING - titleRect.bottom)
+        overlay = pygame.Surface((bodyRect.width, bodyRect.height))
+        overlay.blit(DISPLAYSURF, (0, 0), bodyRect) # gets current main window
+        DISPLAYSURF.fill(BGCOLOR)
+        DISPLAYSURF.blit(overlay, bodyRect.topleft) # keeps last version of  lobby window consistent
+        if pygame.time.get_ticks() % GETUPDATE < 100: # check lobby updates
+            displayLobbies(bodyRect)    # lags game if run constantly
         DISPLAYSURF.blit(titleSurf, titleRect)
-        bodyRect = (MARGIN, titleRect.bottom + PADDING, BODYWIDTH, WINDOWHEIGHT - MARGIN - PADDING - titleRect.bottom)
+        try:
+            if boxlist:
+                for row in range(len(boxlist)):
+                    for col in range(len(boxlist[row])):
+                        boxRect = Rect(boxlist[row][col])
+                        midbottom = (boxRect.width/2, boxRect.height - PADDING)
+                        draw.makeButton('enterroom', DISPLAYSURF, midbottom=(boxRect.centerx, boxRect.y+boxRect.height-PADDING))
+        except NameError:
+            pass
         pygame.draw.rect(DISPLAYSURF, LIGHTGRAY, bodyRect, 2)
-
         draw.makeButton('newroom', DISPLAYSURF, top=MARGIN, right=WINDOWWIDTH - MARGIN)
-
-        displayLobbies(bodyRect)
 
         check.forQuit()
         pygame.event.clear()    # possibly solves 'freezing' issue in 0.0.1 where QUIT/ESC fail to terminate the program
         updateDisplay()
 
 def displayLobbies(enclosure):
-    enclosure = Rect(enclosure)
+    global boxlist
+    pygame.draw.rect(DISPLAYSURF, BGCOLOR, enclosure) # clears body rect area
     BOXCOLS = 4
     BOXROWS = 2
     box_width = int((enclosure.width - PADDING*(BOXCOLS+1))/BOXCOLS)
     box_height = int((enclosure.height - PADDING*(BOXROWS+1))/BOXROWS)
     # nest for loops to iterate over area of boxes
+    boxlist = [] # boxes found by boxlist[row][col]
     for row in range(BOXROWS):
+        boxlist.append([])
         for col in range(BOXCOLS):
             x = enclosure.left + PADDING + col*(box_width+PADDING)
             y = enclosure.top + PADDING + row*(box_height+PADDING)
-            pygame.draw.rect(DISPLAYSURF, LIGHTGRAY, (x, y, box_width, box_height)) # placeholder rectangles; will become boxes representing each open library, fetched from BASEURL/lobby/data
+            boxlist[row].append((x, y, box_width, box_height))
+    l = requests.get(BASEURL + '/lobby/data')
+    lobbydata = l.json()    # lobbydata["roomnum"] returns dict defining room
+# keys: description (str), leader (str), players (list), spectators (list), room (int), private (bool), password (str if private=True, else None)
+    i = 0   # only show first ROWS*COLS active lobbies
+    temp = []
+    for key, value in lobbydata.items():
+        r = value['room']
+        if len(lobbydata) > BOXCOLS * BOXROWS:
+            assert False, 'Too many lobbies! Ask Chris to fix this.'
+        else:
+            temp.append(value)
+        assert len(temp) <= BOXCOLS * BOXROWS, 'ERROR: Too many lobbies to display'
+    lobbydata = temp    # Dict > List
+    if len(lobbydata) == 0:
+        noneSurf, noneRect = draw.lineText('No lobbies!', DARKGRAY, MAINFONT)
+        loadRect.center = (WINDOWWIDTH/2, WINDOWHEIGHT/2)
+        DISPLAYSURF.blit(loadSurf, loadRect)
+    else:
+        for item in range(len(lobbydata)):
+            lobbydata[item]['lobbySurf'] = makeLobbySurf(lobbydata[item], box_width, box_height)
+            assert item/BOXCOLS < BOXROWS, 'Too many items in list!'
+            DISPLAYSURF.blit(lobbydata[item]['lobbySurf'], boxlist[item/BOXCOLS][item % BOXCOLS])
+
+def makeLobbySurf(dict, width, height):
+    lobSurf = pygame.Surface((width, height))
+    lobSurf.fill(BGCOLOR)
+    tFont = getFont(40)
+    ts, tr = draw.lineText('Room ' + str(dict['room']), RESBLUE, tFont, PADDING, PADDING)
+    lobSurf.blit(ts, tr)
+    pygame.draw.line(lobSurf, LIGHTRED, (0, tr.bottom), (width, tr.bottom), 2)
+    if dict['private']:
+        ps, pr = draw.lineText('PRIV', SPYRED, getFont(14))
+        pr.topright = (width-PADDING, PADDING)
+        lobSurf.blit(ps, pr)
+    draw.textBox(lobSurf, dict['description'], TEXTCOLOR, (PADDING, PADDING + tr.bottom, width-PADDING*2, height), MAINFONT)
+    players_text = 'Players: '
+    for player in range(len(dict['players'])):
+        players_text = players_text + dict['players'][player]
+        if player != len(dict['players']) - 1:
+            players_text = players_text + ', '
+    draw.textBox(lobSurf, players_text, TEXTCOLOR, (PADDING, PADDING + tr.bottom + MAINFONT.size('Tg')[1]*3, width-PADDING*2, height), MAINFONT)
+    return lobSurf
 
 # gets version from server (json data, which requests decodes)
 # interrupts code if version mismatch

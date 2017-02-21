@@ -12,6 +12,7 @@ WHITE           = (255, 255, 255)
 BLACK           = (  0,   0,   0)
 RESBLUE         = ( 60, 160, 220)
 SPYRED          = (195,  60,  60)
+LIGHTRED        = (210, 130, 130)
 DARKGRAY        = ( 65,  65,  65)
 LIGHTGRAY       = (190, 190, 190)
 
